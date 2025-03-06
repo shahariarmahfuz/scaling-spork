@@ -1,7 +1,7 @@
 import os
 import uuid
 from flask import Flask, render_template, request, send_from_directory
-from werkzeug.utils import secure_filename
+from werkzeug.utils import secure_filename, quote  # quote যোগ করা হয়েছে
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/temp'
@@ -59,9 +59,10 @@ def process_files():
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    return send_from_directory(app.config['PROCESSED_FOLDER'], filename, as_attachment=True)
+    encoded_filename = quote(filename)  # ফাইল নাম এনকোড করা হয়েছে
+    return send_from_directory(app.config['PROCESSED_FOLDER'], encoded_filename, as_attachment=True)
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PROCESSED_FOLDER'], exist_ok=True)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8000)
