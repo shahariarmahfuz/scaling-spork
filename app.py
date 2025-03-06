@@ -2,7 +2,8 @@ import os
 import uuid
 from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
-import dropbox  # Dropbox API যোগ করুন
+import dropbox
+from threading import Thread
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/temp'
@@ -25,6 +26,30 @@ def upload_to_dropbox(file_path, file_name):
         return shared_link.url
     except Exception as e:
         return f"Error uploading to Dropbox: {str(e)}"
+
+def process_video_background(video_path, output_path, output_filename):
+    try:
+        # ভিডিও থেকে অডিও আলাদা করুন
+        audio_path = os.path.join(app.config['PROCESSED_FOLDER'], f"audio_{uuid.uuid4()}.mp3")
+        os.system(f"ffmpeg -i {video_path} -q:a 0 -map a {audio_path}")
+        
+        # ভিডিও এবং অডিও মার্জ করুন
+        os.system(f"ffmpeg -i {video_path} -i {audio_path} -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 {output_path}")
+        
+        # Dropbox তে আপলোড করুন
+        download_url = upload_to_dropbox(output_path, output_filename)
+        
+        # টেম্প ফাইল ডিলিট করুন
+        os.remove(video_path)
+        os.remove(audio_path)
+        os.remove(output_path)
+
+        # ফলাফল ডাটাবেস বা ফাইলে সংরক্ষণ করুন
+        with open(f"results/{output_filename}.txt", "w") as f:
+            f.write(download_url)
+    except Exception as e:
+        with open(f"results/{output_filename}.txt", "w") as f:
+            f.write(f"Error: {str(e)}")
 
 @app.route('/')
 def upload_page():
@@ -56,23 +81,25 @@ def process_files():
     
     video_file.save(video_path)
 
-    # Process the video using FFmpeg
-    try:
-        # Merge all audio tracks into one and combine with the video
-        os.system(f"ffmpeg -i {video_path} -c:v copy -map 0:v:0 -map 0:a -c:a aac {output_path}")
-        
-        # Dropbox তে আপলোড করুন
-        download_url = upload_to_dropbox(output_path, output_filename)
-        
-        # টেম্প ফাইল ডিলিট করুন
-        os.remove(video_path)
-        os.remove(output_path)
+    # ব্যাকগ্রাউন্ডে প্রসেসিং শুরু করুন
+    Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
 
-        return render_template('download.html', download_url=download_url)
-    except Exception as e:
-        return f'Error processing video: {str(e)}'
+    return render_template('processing.html', process_id=output_filename)
+
+@app.route('/check_status/<process_id>')
+def check_status(process_id):
+    try:
+        with open(f"results/{process_id}.txt", "r") as f:
+            result = f.read()
+        if result.startswith("Error:"):
+            return result
+        else:
+            return render_template('download.html', download_url=result)
+    except FileNotFoundError:
+        return "Processing in progress. Please check back later."
 
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PROCESSED_FOLDER'], exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     app.run(host='0.0.0.0', port=8000)
