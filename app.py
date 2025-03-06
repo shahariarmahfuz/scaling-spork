@@ -1,7 +1,8 @@
 import os
 import uuid
 from flask import Flask, render_template, request, send_from_directory
-from werkzeug.utils import secure_filename, quote  # quote যোগ করা হয়েছে
+from werkzeug.utils import secure_filename  # শুধুমাত্র secure_filename ব্যবহার করুন
+from urllib.parse import quote  # quote ফাংশন যোগ করুন
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/temp'
@@ -59,7 +60,7 @@ def process_files():
 
 @app.route('/download/<filename>')
 def download_file(filename):
-    encoded_filename = quote(filename)  # ফাইল নাম এনকোড করা হয়েছে
+    encoded_filename = quote(filename)  # urllib.parse.quote ব্যবহার করুন
     return send_from_directory(app.config['PROCESSED_FOLDER'], encoded_filename, as_attachment=True)
 
 if __name__ == '__main__':
