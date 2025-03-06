@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # ফোল্ডার তৈরি করুন
-RUN mkdir -p uploads/temp uploads/processed
+RUN mkdir -p uploads/temp uploads/processed results
 
 # পোর্ট এক্সপোজ করুন
 EXPOSE 8000
