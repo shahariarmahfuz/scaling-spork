@@ -14,6 +14,9 @@ ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
 DROPBOX_ACCESS_TOKEN = 'sl.u.AFkWg7aLa4ytcLhDZHWtcbP-EDNmXgtSb15xaS28NTutJTmCoI5nzZAxZWGiFFzB81WeiPNEHAj6OBvajJF_ghkjEwCxzWnZQSszxROT-cH7sn481HTX3myKV1gb0TeXUo2FFj2USM26BIiHwzcY6GtYMqAAbcvP85Rkz8JqYToCFDzv2MdUttgtgVEbVyag0JKviFYyWTgynXvbb-S-iCD5fyg6jP7e5_bwDtTtScOhPCCDJ9vJdKSsN9jcXvId8CBe_dTf14VhjYHfTc1Dz5C8BP3DZSUtKeOhy4Px-Hf40-LSQA9hLky4Mop7q7--8c30M09cDJjQhEAXWuXTv6jqvLK9ztYcMHYSXCVIokgxMqge8oHXwK7dHqOhylnZSsVI_GdDlviuD2M1P4gZjnYjYgpnYjewxYiH-UP6IbsjQLz7DKMcG2p3cChHlC67m3iKa9Y0susd8Vr1NIiYZH2rXU-EVNlYd1CWNdWCtMrEsb-64bMgCtQgTFkmuonXqQzfVuVOzSg32SSW2evZ6jzrwFYB3O8aql0dra23gtCrgbWUUyiLYjW1KiQsoGisSC5g0f6lXxS3lH_XDc3sDmTE6silicoJMSaAPgR2c1XkghE63OOkPrmb0tGaaOMRyvsNcv4niiEmUZbAPGyP7rAWBrEgnZK3bjSxjny11P_8FWNnfnF470z_Cl4IoIypHH0TYTPYCJuqG-eQvI9QZ6EyfwwJT6MkkOjB2OWefdFcP5p-5x742Q_inE_R3ySmfRCAAqK5z9EejpVKVtyeTzkdjQAFGC7lLtB4GstGFgmBouHE5k3hm___zWWXCILaQvr1IVwjVQumNPPQ5XYdqcrPhITmcy8hKBtp-CJ-kiTRNCFH_Px29XelhFmTxV4AeOzOBsgE_FR-C8YoYgb4UREkNnTlgNa-vmaIs4c2J0M4hdx-w9_AqwXsjxlvcSN2PDzAbNzkVCu6dEDj3z5igZsWY0qA8GsxJiW0ko-s_k0KKXGiTUSPw8ey4f9URg43nNYYEgOSAeNyFuWWJ-XGq_t0QT3xPpTygY53HyTc4YwFNoHx08l_UkNzUwZHYabL9PO3vFeN5anvY9qij-k66TaM6OKOACpePZ6-8JJlprFwQXlziQ2ETH5BRRRQluySbTS3bU5MnFU914zXFtUHWwZLGasA33YIYZmI2LpdMwi9qK4t5647MS2jOgj8et-mgsbS5z5AkxCTqkjbL6BHs2jFyy7StBnZJ0wtVYyp36i9zjrI5tiT0_-bZuxTyFcsyZOq9eiJ0Uhru6BXwV-EK7F8cHcjnTxHBX_dftsObkhqyY5MSf5U3quqZ6fasZxjQINCYC66hrPdCLeByhyujiuFUfqrN3Etuw9g-czir7qiNrYPl1i6HHHDMcvCupJXRmhzLKovc_gK51uF3Xp7tHExaxs1P14woYhs_UkyHqTfWQ'
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
+# results ফোল্ডার তৈরি করুন
+os.makedirs("results", exist_ok=True)
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -44,7 +47,7 @@ def process_video_background(video_path, output_path, output_filename):
         os.remove(audio_path)
         os.remove(output_path)
 
-        # ফলাফল ডাটাবেস বা ফাইলে সংরক্ষণ করুন
+        # ফলাফল results ফোল্ডারে সংরক্ষণ করুন
         with open(f"results/{output_filename}.txt", "w") as f:
             f.write(download_url)
     except Exception as e:
@@ -101,5 +104,4 @@ def check_status(process_id):
 if __name__ == '__main__':
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['PROCESSED_FOLDER'], exist_ok=True)
-    os.makedirs("results", exist_ok=True)
     app.run(host='0.0.0.0', port=8000)
