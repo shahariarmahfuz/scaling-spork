@@ -6,8 +6,8 @@ WORKDIR /app
 
 # প্রয়োজনীয় প্যাকেজ ইনস্টল করুন
 RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 
 # requirements.txt কপি করুন এবং প্যাকেজ ইনস্টল করুন
 COPY requirements.txt .
@@ -23,4 +23,4 @@ RUN mkdir -p uploads/temp uploads/processed results
 EXPOSE 8000
 
 # অ্যাপ্লিকেশন চালান
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--timeout", "600", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "app:app"]
