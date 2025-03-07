@@ -1,7 +1,6 @@
 import os
 import uuid
-import time
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import dropbox
 from threading import Thread
@@ -12,7 +11,7 @@ app.config['PROCESSED_FOLDER'] = 'uploads/processed'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
 
 # Dropbox কনফিগারেশন
-DROPBOX_ACCESS_TOKEN = 'your_dropbox_access_token'
+DROPBOX_ACCESS_TOKEN = 'sl.u.AFmNnG1PmSrCL-VxHMNOVrHoUkKI1431RXsLN-Z7ZIkq70VpW3HAclty7TSEawyCPSXb_s5X8MDEzKE4GuA0lCdKIMHMeaaRn9OVWtNtP7t00yVm8qm-0W3sNKwHY8zZy7qQTAewFoQZW0iTswheX4-8Cl8ZoNbUrlftuPCtEeneTn1_v20hYdD9ic8lePF3XFkmBCP9os6sJM6CfA2o-AQ7PrMdqhDO6OcJtSvQE603IfDSVPP3JWhYxwuEgnUdDNAoY9DbKvSFDZ0woVKlGDQwDvr6nbsW-45sXHGwLaCzPVG1KBzRomv5ji-numIzzrnx3OiEzJ-1yeDyP4Qzvi4tsaQEEqMHKYi9GNAaze-OpF4uWTc_-paHg_RqsBP9x8R2ontvVIsK3lTikyw6YX7J-2iPWXoUL2SrSatIjxLNsSJxOXB41Ibw3mMoSWFLbUkT5v2xKDsqBJFPR_gZWLIXkAYvCbkGILaibFf9lPD_XVIz9FKvoMuPNhMXNmqifiCU8B4flQUTT96OXkKAeXtkZ6OOaQ-ilI3iwdZu0z40xt6Qhr3MeV7xvDxoAcdtF1tsNB8Ml9sew7erBNB4tNWa1d3diSHRUvCqXvqrK_D-C78-UOqHAg7yhobYs6xZDKTKXbRt7v9gh-aY33hhTUuJagtrf4G5Va7fINothH8cOqEi2IyWnbyAGrMliRDf-WNW0-UhtGaETyfmrtPsVvxEYyRRzp_naEZe6Tehr6CVMyzOhlM4tRrMBZ-eDJX43z__K22Nc27_bnUio94uKqNFYByhEz5MdY94ANARmFQURjtjXZXWu5Vj8jjncdmtkTtSY0KyCvIToUdjV2rTAOHZlxJFJe-LGvNDqt3WMwpmBN-7mPtSaYWFhZvCy1NGkOVYmrKQEq2W3i5YWkB72XJ8m0S5CWKCTdy7weWsEj8irYh3wKDB1h4vEflz-JoWRn8VvmWnzH30mmVpQHvsIHQL5deKFGwKVAjOR31fSMNpDqoy5RpiqwVqRfp8rZDLV_Y4p86LWLcDPbhsEiH3PTVla-Xgynr48CjP_y2PHtng8sXkLT7tG3obw6-7OOJkHaGL2-w5Cfjmz65WHZ_eqxIXAZf8TddBHSS66JCAgD9xJz1ZXbqsVHMu8MxgOqpG4gqgPlcELwH_mpQ5JZ71-kvMaEvOaoaj4KO0exEWRMC6Xhtxa-ZpIK5H-zJ8g5FIcFVm-NUaPj8msoDuMl8efwBtBZMm7xFeXd-F8ymA7KypK7ck-5_k1W_Js16ycumh_zYncQnZZPHtZ6mre2Zge8Y3LfnbWGyijZw6lyp8BufbpLA-Pu0dlcH1asehdvqX5nIWcNX7GhMn341CKad4AgBIXYQA_f1ZeINut-CW-KOBZ_YwFd6JrrXCz9rvn8ZIF9GahXTb-UfQfRMW3lQKO8Y3KR-CqBN18L75jYFocVsAyg'
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
 # ফোল্ডার তৈরি করুন
@@ -35,9 +34,6 @@ def upload_to_dropbox(file_path, file_name):
 
 def process_video_background(video_path, output_path, output_filename):
     try:
-        # ১৫ থেকে ২০ সেকেন্ড অপেক্ষা করুন
-        time.sleep(15)
-        
         # ভিডিও থেকে অডিও আলাদা করুন
         audio_path = os.path.join(app.config['PROCESSED_FOLDER'], f"audio_{uuid.uuid4()}.mp3")
         os.system(f"ffmpeg -i {video_path} -q:a 0 -map a {audio_path}")
@@ -86,11 +82,40 @@ def process_files():
     
     video_file.save(video_path)
 
-    # প্রসেসিং শুরু করুন
     Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
 
-    # ইউজারকে চেক পেজে রিডাইরেক্ট করুন
-    return redirect(url_for('check_status', process_id=output_filename))
+    return render_template('processing.html', process_id=output_filename)
+
+@app.route('/up', methods=['POST'])
+def handle_up():
+    if 'video' not in request.files:
+        return jsonify({'status': 'error', 'message': 'No video file'}), 400
+    
+    video_file = request.files['video']
+    
+    if video_file.filename == '':
+        return jsonify({'status': 'error', 'message': 'Empty filename'}), 400
+    
+    if not allowed_file(video_file.filename):
+        return jsonify({'status': 'error', 'message': 'Invalid file type'}), 400
+
+    unique_id = str(uuid.uuid4())
+    video_ext = video_file.filename.rsplit('.', 1)[1].lower()
+    video_filename = f"{unique_id}_video.{video_ext}"
+    output_filename = f"{unique_id}_output.mp4"
+
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
+    output_path = os.path.join(app.config['PROCESSED_FOLDER'], output_filename)
+    
+    video_file.save(video_path)
+
+    Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
+
+    return jsonify({
+        'status': 'processing',
+        'process_id': output_filename,
+        'check_url': f'/check_status/{output_filename}'
+    }), 202
 
 @app.route('/check_status/<process_id>')
 def check_status(process_id):
@@ -113,7 +138,7 @@ def check_status(process_id):
         if request.headers.get('Accept') == 'application/json':
             return jsonify({'status': 'processing'}), 202
         else:
-            return render_template('processing.html', process_id=process_id)
+            return "Processing in progress..."
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)
