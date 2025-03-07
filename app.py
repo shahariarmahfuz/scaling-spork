@@ -1,5 +1,6 @@
 import os
 import uuid
+import time
 from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import dropbox
@@ -34,12 +35,15 @@ def upload_to_dropbox(file_path, file_name):
 
 def process_video_background(video_path, output_path, output_filename):
     try:
+        # ১৫ থেকে ২০ সেকেন্ড অপেক্ষা করুন
+        time.sleep(15 + (uuid.uuid4().int % 6))  # Random delay between 15 to 20 seconds
+        
         # ভিডিও থেকে অডিও আলাদা করুন
         audio_path = os.path.join(app.config['PROCESSED_FOLDER'], f"audio_{uuid.uuid4()}.mp3")
         os.system(f"ffmpeg -i {video_path} -q:a 0 -map a {audio_path}")
         
         # ভিডিও এবং অডিও মার্জ করুন
-        os.system(f"ffmpeg -i {video_path} -i {audio_path} -c:v libx264 -preset ultrafast -c:a aac -map 0:v:0 -map 1:a:0 {output_path}")
+        os.system(f"ffmpeg -i {video_path} -i {audio_path} -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 {output_path}")
         
         # Dropbox তে আপলোড করুন
         download_url = upload_to_dropbox(output_path, output_filename)
@@ -82,6 +86,7 @@ def process_files():
     
     video_file.save(video_path)
 
+    # প্রসেসিং শুরু করার আগে ১৫ থেকে ২০ সেকেন্ড অপেক্ষা করুন
     Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
 
     return render_template('processing.html', process_id=output_filename)
@@ -109,6 +114,7 @@ def handle_up():
     
     video_file.save(video_path)
 
+    # প্রসেসিং শুরু করার আগে ১৫ থেকে ২০ সেকেন্ড অপেক্ষা করুন
     Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
 
     return jsonify({
