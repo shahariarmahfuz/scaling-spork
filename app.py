@@ -1,6 +1,6 @@
 import os
 import uuid
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from werkzeug.utils import secure_filename
 import dropbox
 from threading import Thread
@@ -11,11 +11,13 @@ app.config['PROCESSED_FOLDER'] = 'uploads/processed'
 ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
 
 # Dropbox কনফিগারেশন
-DROPBOX_ACCESS_TOKEN = 'sl.u.AFkWg7aLa4ytcLhDZHWtcbP-EDNmXgtSb15xaS28NTutJTmCoI5nzZAxZWGiFFzB81WeiPNEHAj6OBvajJF_ghkjEwCxzWnZQSszxROT-cH7sn481HTX3myKV1gb0TeXUo2FFj2USM26BIiHwzcY6GtYMqAAbcvP85Rkz8JqYToCFDzv2MdUttgtgVEbVyag0JKviFYyWTgynXvbb-S-iCD5fyg6jP7e5_bwDtTtScOhPCCDJ9vJdKSsN9jcXvId8CBe_dTf14VhjYHfTc1Dz5C8BP3DZSUtKeOhy4Px-Hf40-LSQA9hLky4Mop7q7--8c30M09cDJjQhEAXWuXTv6jqvLK9ztYcMHYSXCVIokgxMqge8oHXwK7dHqOhylnZSsVI_GdDlviuD2M1P4gZjnYjYgpnYjewxYiH-UP6IbsjQLz7DKMcG2p3cChHlC67m3iKa9Y0susd8Vr1NIiYZH2rXU-EVNlYd1CWNdWCtMrEsb-64bMgCtQgTFkmuonXqQzfVuVOzSg32SSW2evZ6jzrwFYB3O8aql0dra23gtCrgbWUUyiLYjW1KiQsoGisSC5g0f6lXxS3lH_XDc3sDmTE6silicoJMSaAPgR2c1XkghE63OOkPrmb0tGaaOMRyvsNcv4niiEmUZbAPGyP7rAWBrEgnZK3bjSxjny11P_8FWNnfnF470z_Cl4IoIypHH0TYTPYCJuqG-eQvI9QZ6EyfwwJT6MkkOjB2OWefdFcP5p-5x742Q_inE_R3ySmfRCAAqK5z9EejpVKVtyeTzkdjQAFGC7lLtB4GstGFgmBouHE5k3hm___zWWXCILaQvr1IVwjVQumNPPQ5XYdqcrPhITmcy8hKBtp-CJ-kiTRNCFH_Px29XelhFmTxV4AeOzOBsgE_FR-C8YoYgb4UREkNnTlgNa-vmaIs4c2J0M4hdx-w9_AqwXsjxlvcSN2PDzAbNzkVCu6dEDj3z5igZsWY0qA8GsxJiW0ko-s_k0KKXGiTUSPw8ey4f9URg43nNYYEgOSAeNyFuWWJ-XGq_t0QT3xPpTygY53HyTc4YwFNoHx08l_UkNzUwZHYabL9PO3vFeN5anvY9qij-k66TaM6OKOACpePZ6-8JJlprFwQXlziQ2ETH5BRRRQluySbTS3bU5MnFU914zXFtUHWwZLGasA33YIYZmI2LpdMwi9qK4t5647MS2jOgj8et-mgsbS5z5AkxCTqkjbL6BHs2jFyy7StBnZJ0wtVYyp36i9zjrI5tiT0_-bZuxTyFcsyZOq9eiJ0Uhru6BXwV-EK7F8cHcjnTxHBX_dftsObkhqyY5MSf5U3quqZ6fasZxjQINCYC66hrPdCLeByhyujiuFUfqrN3Etuw9g-czir7qiNrYPl1i6HHHDMcvCupJXRmhzLKovc_gK51uF3Xp7tHExaxs1P14woYhs_UkyHqTfWQ'
+DROPBOX_ACCESS_TOKEN = 'sl.u.AFlIETpeJDrPqME7RkZonbusQlZkzoTrCBiSdYF6duSyBcF2HUdWuC16qqcaR2TzGuCnswfUqwfX0MCqLCrBXxwZbIwNI_aEeKoX4bK9oVPRWl4zFAY89HEQiPumlpioJhPdg-93olNzZxo9oCd5QsOPZD-vGGZ_PNKJje002EZO7_MY8xq_MF0_hct3-BufAuBJpQmAghYNRymd6SKXn2_kU7PumyLK-xt1PvetUSxIzrAAfq8DG1uxC-3Aj2Ms2-Qkjac5jseM5CpMi2RYTKsY0BZoLBYWAj8oCXYLnnGTJE1csE2fe4-4dac_niOwMBmtLeFqEebaBOr3oqffpLFbSMPtJXqSXfe2B6Sn-rqIH2UVno6XDDRMzU_qD6P0nyYuQmEyK_FvhGbT1bDAx26q6hOzxLBblJg1QTk1LHpNasBeywG61vv1keFrgGqY5Qgxe2KRHe-zMm4SC25Dy4Gnwmd-DZQYsMXWxut55lstg-hFFwW509luDc-884Uxq99Kfl_-Z3HJi6-33krZjytSdiUGwVFUcs2qaDmd1pMO-xDryYFPQ_dEmRHJW-G_nSZuIfvKhQyEEB4zJ1WB-uoUFmFQndeIkrNm260UTEZtkNeZAK6My2qZ7RfiiH0WIWl6HtEJwL3PaG3QKlsCwh9Rn1RQ11Eqx4b1qkUSdCoQD3Z-EwuAU-J-FRFiOsanSil09zpEDd-bb_oSMYEceLe0ckKO2eSQWRWi5sked9pGvc6TkjL8SPecEIqJwR8nSGOJG0c8Nw4jVrfToPCBYYLRMmhwTyhHpao67T7e4PZSIE2R2H0YHnRZ5E3c2KNz_Ig7SwKOunXDXeNFOZGOEPwcMkUs9VMCWuT85M7Hov2GRCxv2jub4h9c3QQqLxvndF1aj-NcxaD2TrSt8K5Edv440dsKqTY1zHX1FSmpt8ypMHOmCc8Z2CAINec4moz1W2jP9_nZ_6nmMUJnI0wb5XSDq_2Z7x90BpfiFajvtdP1RH-Ibwx1dhuqDumYyTIHXjECKLuUkl6oCviJvk13JrwY7KNoi0zW5kdhukAKakE7WZnC3ERYvQph-h1-mSxcjCcT86iD2Bvqw016yWp7Z08WCa7v5SkDB9ue97vtPzN7tZm6ev66WPf_W3jya6CUs7r7Csa3rJj9PU1Atb63gscZ4ne5VRn9Dv79Kdm_1q-tkWaZ_jzxFQ2ieJ26GRrd-bwTcurpDiDAsq1S5_DDQj4jTtHNOrHBUMKq85GoQmlRLH9hail2oqhhu4EXK-L5pqgWYuzxwubFu26uPaHVdmHBLrk22hul51BFtz9BLdtSqmL4DH_GcBwmLv6Bo0ShaXYJgJHzf0_1Z7rXGSLBg0hjI3O7X6sJPl6TqwR_N86G_-B0W5jqNQcJ_VBNxrHrA6vauX8j8ubWLhKW5UUYIPDFAv07Ps6wSr5ZCymmA3p0OQ'
 dbx = dropbox.Dropbox(DROPBOX_ACCESS_TOKEN)
 
-# results ফোল্ডার তৈরি করুন
+# ফোল্ডার তৈরি করুন
 os.makedirs("results", exist_ok=True)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['PROCESSED_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -60,7 +62,6 @@ def upload_page():
 
 @app.route('/process', methods=['POST'])
 def process_files():
-    # Check if the video file is uploaded
     if 'video' not in request.files:
         return 'No video file uploaded'
     
@@ -72,10 +73,7 @@ def process_files():
     if not allowed_file(video_file.filename):
         return 'Invalid file type'
 
-    # Generate unique ID
     unique_id = str(uuid.uuid4())
-    
-    # Save the uploaded video file
     video_filename = secure_filename(f"{unique_id}_video.{video_file.filename.rsplit('.', 1)[1].lower()}")
     output_filename = f"{unique_id}_output.mp4"
     
@@ -84,24 +82,63 @@ def process_files():
     
     video_file.save(video_path)
 
-    # ব্যাকগ্রাউন্ডে প্রসেসিং শুরু করুন
     Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
 
     return render_template('processing.html', process_id=output_filename)
+
+@app.route('/up', methods=['POST'])
+def handle_up():
+    if 'video' not in request.files:
+        return jsonify({'status': 'error', 'message': 'No video file'}), 400
+    
+    video_file = request.files['video']
+    
+    if video_file.filename == '':
+        return jsonify({'status': 'error', 'message': 'Empty filename'}), 400
+    
+    if not allowed_file(video_file.filename):
+        return jsonify({'status': 'error', 'message': 'Invalid file type'}), 400
+
+    unique_id = str(uuid.uuid4())
+    video_ext = video_file.filename.rsplit('.', 1)[1].lower()
+    video_filename = f"{unique_id}_video.{video_ext}"
+    output_filename = f"{unique_id}_output.mp4"
+
+    video_path = os.path.join(app.config['UPLOAD_FOLDER'], video_filename)
+    output_path = os.path.join(app.config['PROCESSED_FOLDER'], output_filename)
+    
+    video_file.save(video_path)
+
+    Thread(target=process_video_background, args=(video_path, output_path, output_filename)).start()
+
+    return jsonify({
+        'status': 'processing',
+        'process_id': output_filename,
+        'check_url': f'/check_status/{output_filename}'
+    }), 202
 
 @app.route('/check_status/<process_id>')
 def check_status(process_id):
     try:
         with open(f"results/{process_id}.txt", "r") as f:
             result = f.read()
-        if result.startswith("Error:"):
-            return result
+        
+        if request.headers.get('Accept') == 'application/json':
+            if result.startswith("Error:"):
+                return jsonify({'status': 'error', 'message': result}), 400
+            else:
+                return jsonify({'status': 'success', 'url': result})
         else:
-            return render_template('download.html', download_url=result)
+            if result.startswith("Error:"):
+                return result
+            else:
+                return render_template('download.html', download_url=result)
+                
     except FileNotFoundError:
-        return "Processing in progress. Please check back later."
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({'status': 'processing'}), 202
+        else:
+            return "Processing in progress..."
 
 if __name__ == '__main__':
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['PROCESSED_FOLDER'], exist_ok=True)
     app.run(host='0.0.0.0', port=8000)
